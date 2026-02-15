@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sessions</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .admin-link { background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; }
+        .admin-link:hover { background-color: #0056b3; }
+        .sessions-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .session-card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .session-card h3 { margin-top: 0; color: #333; }
+        .session-date { color: #666; font-size: 0.9em; }
+        .session-desc { margin-top: 10px; color: #555; line-height: 1.5; }
+        .no-sessions { text-align: center; color: #999; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Sessions</h1>
+        <a href="sessions_edit.html" class="admin-link">Admin Editor</a>
+    </div>
+
+    <div id="sessionsContainer" class="sessions-container">
+        <div class="no-sessions">No sessions yet</div>
+    </div>
+
+    <script>
+        function loadSessions() {
+            fetch('api.php?action=get')
+                .then(res => res.json())
+                .then(sessions => {
+                    const container = document.getElementById('sessionsContainer');
+                    
+                    if (sessions.length === 0) {
+                        container.innerHTML = '<div class="no-sessions">No sessions yet</div>';
+                        return;
+                    }
+
+                    container.innerHTML = sessions.map(session => `
+                        <div class="session-card">
+                            <h3>${session.name}</h3>
+                            <div class="session-date">${session.date || 'No date specified'}</div>
+                            <div class="session-desc">${session.desc || ''}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => {
+                    console.error('Error loading sessions:', err);
+                    document.getElementById('sessionsContainer').innerHTML = '<div class="no-sessions">Error loading sessions</div>';
+                });
+        }
+
+        // Load sessions on page load
+        loadSessions();
+
+        // Refresh sessions when storage changes (in case admin editor is open in another tab)
+        window.addEventListener('storage', loadSessions);
+    </script>
+</body>
+</html>

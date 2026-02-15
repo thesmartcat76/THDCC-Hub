@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Session Editor</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; }
+        .login-panel, .admin-panel { border: 2px solid #333; padding: 20px; border-radius: 5px; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        button:hover { background-color: #0056b3; }
+        .session-item { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Admin Session Editor</h1>
+    
+    <div id="loginPanel" class="login-panel">
+        <h2>Enter Password</h2>
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button onclick="checkPassword()">Login</button>
+    </div>
+
+    <div id="adminPanel" class="admin-panel hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">Admin Panel</h2>
+            <div>
+                <a href="sessions.html" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; margin-right: 10px; display: inline-block;">← Back to Sessions</a>
+                <button onclick="logout()" style="float: right;">Logout</button>
+            </div>
+        </div>
+        <input type="text" id="sessionName" placeholder="Session Name">
+        <input type="date" id="sessionDate" placeholder="Date">
+        <textarea id="sessionDesc" placeholder="Description"></textarea>
+        <button onclick="addSession()">Add Session</button>
+
+        <h2>Sessions</h2>
+        <div id="sessionsList"></div>
+
+        <h2>Export/Import</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="fileUpload" style="display: block; margin-bottom: 10px;">Upload JSON File:</label>
+            <input type="file" id="fileUpload" accept=".json" style="margin-bottom: 10px;">
+            <button onclick="uploadJSON()">Upload Sessions</button>
+        </div>
+        <button onclick="downloadJSON()">Download JSON</button>
+        <button onclick="clearAll()">Clear All</button>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'THDCC2026'; // Change this
+        let sessions = [];
+        let isLoggedIn = false;
+
+        function checkPassword() {
+            const pwd = document.getElementById('passwordInput').value;
+            if (pwd === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('loginPanel').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadSessions();
+            } else {
+                alert('Invalid password');
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            document.getElementById('loginPanel').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        function loadSessions() {
+            fetch('api.php?action=get')
+                .then(res => res.json())
+                .then(data => {
+                    sessions = data;
+                    renderSessions();
+                })
+                .catch(err => console.error('Error loading sessions:', err));
+        }
+
+        function addSession() {
+            const name = document.getElementById('sessionName').value;
+            const date = document.getElementById('sessionDate').value;
+            const desc = document.getElementById('sessionDesc').value;
+
+            if (!name) {
+                alert('Session name is required');
+                return;
+            }
+
+            fetch('api.php?action=add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, date, desc })
+            })
+            .then(res => res.json())
+            .then(data => {
+                sessions = data.sessions;
+                renderSessions();
+                document.getElementById('sessionName').value = '';
+                document.getElementById('sessionDate').value = '';
+                document.getElementById('sessionDesc').value = '';
+            })
+            .catch(err => console.error('Error adding session:', err));
+        }
+
+        function renderSessions() {
+            const list = document.getElementById('sessionsList');
+            list.innerHTML = sessions.map((s, i) => `
+                <div class="session-item">
+                    <strong>${s.name}</strong> - ${s.date || 'No date'}
+                    <p>${s.desc || ''}</p>
+                    <button onclick="deleteSession(${i})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteSession(index) {
+            fetch('api.php?action=delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index })
+            })
+            .then(res => res.json())
+            .then(data => {
+                sessions = data.sessions;
+                renderSessions();
+            })
+            .catch(err => console.error('Error deleting session:', err));
+        }
+
+        function downloadJSON() {
+            const dataStr = JSON.stringify(sessions, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'sessions.json';
+            link.click();
+        }
+
+        function uploadJSON() {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a JSON file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const uploadedSessions = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(uploadedSessions)) {
+                        alert('Invalid JSON format. File must contain an array of sessions.');
+                        return;
+                    }
+
+                    // Validate session objects
+                    const validSessions = uploadedSessions.every(s => s.name);
+                    if (!validSessions) {
+                        alert('Invalid session format. Each session must have a name.');
+                        return;
+                    }
+
+                    fetch('api.php?action=upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessions: uploadedSessions })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        sessions = data.sessions;
+                        renderSessions();
+                        fileInput.value = '';
+                        alert('Sessions uploaded successfully!');
+                    })
+                    .catch(err => {
+                        console.error('Error uploading sessions:', err);
+                        alert('Error uploading sessions');
+                    });
+                } catch (error) {
+                    alert('Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAll() {
+            if (confirm('Clear all sessions?')) {
+                fetch('api.php?action=clear', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(() => {
+                        sessions = [];
+                        renderSessions();
+                    })
+                    .catch(err => console.error('Error clearing sessions:', err));
+            }
+        }
+    </script>
+</body>
+</html>
