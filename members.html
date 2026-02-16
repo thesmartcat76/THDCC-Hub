@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .admin-link { background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; }
+        .admin-link:hover { background-color: #0056b3; }
+        .members-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .member-card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .member-card h3 { margin-top: 0; color: #333; }
+        .member-date { color: #666; font-size: 0.9em; }
+        .member-desc { margin-top: 10px; color: #555; line-height: 1.5; }
+        .no-members { text-align: center; color: #999; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Members</h1>
+        <a href="members_edit.html" class="admin-link">Admin Editor</a>
+    </div>
+
+    <div id="membersContainer" class="members-container">
+        <div class="no-members">No members yet</div>
+    </div>
+
+    <script>
+        function loadMembers() {
+            fetch('api.php?action=get&type=members')
+                .then(res => res.json())
+                .then(members => {
+                    const container = document.getElementById('membersContainer');
+                    
+                    if (members.length === 0) {
+                        container.innerHTML = '<div class="no-members">No members yet</div>';
+                        return;
+                    }
+
+                    container.innerHTML = members.map(member => `
+                        <div class="member-card">
+                            <h3>${member.name}${member.uid ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : ''}</h3>
+                            ${member.role ? `<div style="font-weight: bold; color: #007bff; margin: 5px 0;">${member.role}</div>` : ''}
+                            ${member.email ? `<div style="color: #666; font-size: 0.9em;">📧 ${member.email}</div>` : ''}
+                            ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📱 ${member.phone}</div>` : ''}
+                            ${member.date ? `<div style="color: #666; font-size: 0.9em;">📅 Joined: ${member.date}</div>` : ''}
+                            <div class="member-desc">${member.desc || ''}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => {
+                    console.error('Error loading members:', err);
+                    document.getElementById('membersContainer').innerHTML = '<div class="no-members">Error loading members</div>';
+                });
+        }
+
+        // Load members on page load
+        loadMembers();
+
+        // Refresh members when storage changes (in case admin editor is open in another tab)
+        window.addEventListener('storage', loadMembers);
+    </script>
+</body>
+</html>

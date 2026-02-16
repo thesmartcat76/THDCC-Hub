@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Member Editor</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; }
+        .login-panel, .admin-panel { border: 2px solid #333; padding: 20px; border-radius: 5px; }
+        input, textarea { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
+        button:hover { background-color: #0056b3; }
+        .member-item { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Admin Member Editor</h1>
+    
+    <div id="loginPanel" class="login-panel">
+        <h2>Enter Password</h2>
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button onclick="checkPassword()">Login</button>
+    </div>
+
+    <div id="adminPanel" class="admin-panel hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">Admin Panel</h2>
+            <div>
+                <a href="members.html" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; margin-right: 10px; display: inline-block;">← Back to Members</a>
+                <button onclick="logout()" style="float: right;">Logout</button>
+            </div>
+        </div>
+        <input type="text" id="memberName" placeholder="Full Name" required>
+        <input type="text" id="memberUID" placeholder="UID / ID Number">
+        <input type="email" id="memberEmail" placeholder="Email">
+        <input type="tel" id="memberPhone" placeholder="Phone Number">
+        <input type="text" id="memberRole" placeholder="Role/Position">
+        <input type="date" id="memberJoinDate" placeholder="Join Date">
+        <textarea id="memberDesc" placeholder="Bio / Description"></textarea>
+        <button onclick="addMember()">Add Member</button>
+
+        <h2>Members</h2>
+        <div id="membersList"></div>
+
+        <h2>Export/Import</h2>
+        <div style="margin-bottom: 15px;">
+            <label for="fileUpload" style="display: block; margin-bottom: 10px;">Upload JSON File:</label>
+            <input type="file" id="fileUpload" accept=".json" style="margin-bottom: 10px;">
+            <button onclick="uploadJSON()">Upload Members</button>
+        </div>
+        <button onclick="downloadJSON()">Download JSON</button>
+        <button onclick="clearAll()">Clear All</button>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'THDCC2026'; // Change this
+        let members = [];
+        let isLoggedIn = false;
+
+        function checkPassword() {
+            const pwd = document.getElementById('passwordInput').value;
+            if (pwd === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('loginPanel').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadMembers();
+            } else {
+                alert('Invalid password');
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            document.getElementById('loginPanel').classList.remove('hidden');
+            document.getElementById('adminPanel').classList.add('hidden');
+            document.getElementById('passwordInput').value = '';
+        }
+
+        function loadMembers() {
+            fetch('api.php?action=get&type=members')
+                .then(res => res.json())
+                .then(data => {
+                    members = data;
+                    renderMembers();
+                })
+                .catch(err => console.error('Error loading members:', err));
+        }
+
+        function addMember() {
+            const name = document.getElementById('memberName').value;
+            const uid = document.getElementById('memberUID').value;
+            const email = document.getElementById('memberEmail').value;
+            const phone = document.getElementById('memberPhone').value;
+            const role = document.getElementById('memberRole').value;
+            const joinDate = document.getElementById('memberJoinDate').value;
+            const desc = document.getElementById('memberDesc').value;
+
+            if (!name) {
+                alert('Member name is required');
+                return;
+            }
+
+            fetch('api.php?action=add&type=members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, uid, email, phone, role, date: joinDate, desc })
+            })
+            .then(res => res.json())
+            .then(data => {
+                members = data.items;
+                renderMembers();
+                document.getElementById('memberName').value = '';
+                document.getElementById('memberUID').value = '';
+                document.getElementById('memberEmail').value = '';
+                document.getElementById('memberPhone').value = '';
+                document.getElementById('memberRole').value = '';
+                document.getElementById('memberJoinDate').value = '';
+                document.getElementById('memberDesc').value = '';
+            })
+            .catch(err => console.error('Error adding member:', err));
+        }
+
+        function renderMembers() {
+            const list = document.getElementById('membersList');
+            list.innerHTML = members.map((m, i) => `
+                <div class="member-item">
+                    <strong>${m.name}</strong> ${m.uid ? `(${m.uid})` : ''} ${m.role ? `- ${m.role}` : ''}
+                    ${m.email ? `<p>📧 ${m.email}</p>` : ''}
+                    ${m.phone ? `<p>📱 ${m.phone}</p>` : ''}
+                    ${m.date ? `<p>📅 Joined: ${m.date}</p>` : ''}
+                    ${m.desc ? `<p>${m.desc}</p>` : ''}
+                    <button onclick="deleteMember(${i})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteMember(index) {
+            fetch('api.php?action=delete&type=members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ index })
+            })
+            .then(res => res.json())
+            .then(data => {
+                members = data.items;
+                renderMembers();
+            })
+            .catch(err => console.error('Error deleting member:', err));
+        }
+
+        function downloadJSON() {
+            const dataStr = JSON.stringify(members, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'members.json';
+            link.click();
+        }
+
+        function uploadJSON() {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a JSON file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const uploadedMembers = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(uploadedMembers)) {
+                        alert('Invalid JSON format. File must contain an array of members.');
+                        return;
+                    }
+
+                    // Validate member objects
+                    const validMembers = uploadedMembers.every(m => m.name);
+                    if (!validMembers) {
+                        alert('Invalid member format. Each member must have a name.');
+                        return;
+                    }
+
+                    fetch('api.php?action=upload&type=members', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessions: uploadedMembers })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        members = data.items;
+                        renderMembers();
+                        fileInput.value = '';
+                        alert('Members uploaded successfully!');
+                    })
+                    .catch(err => {
+                        console.error('Error uploading members:', err);
+                        alert('Error uploading members');
+                    });
+                } catch (error) {
+                    alert('Invalid JSON file');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAll() {
+            if (confirm('Clear all members?')) {
+                fetch('api.php?action=clear&type=members', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(() => {
+                        members = [];
+                        renderMembers();
+                    })
+                    .catch(err => console.error('Error clearing members:', err));
+            }
+        }
+    </script>
+</body>
+</html>
