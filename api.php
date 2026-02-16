@@ -8,7 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$dataFile = 'sessions.json';
+$type = $_GET['type'] ?? 'sessions';
+$dataFile = $type . '.json';
 
 // Initialize file if it doesn't exist
 if (!file_exists($dataFile)) {
@@ -49,19 +50,19 @@ function addSession() {
     
     if (!isset($input['name'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Session name required']);
+        echo json_encode(['error' => ucfirst(rtrim($GLOBALS['dataFile'], '.json')) . ' name required']);
         return;
     }
 
-    $sessions = json_decode(file_get_contents($dataFile), true);
-    $sessions[] = [
+    $items = json_decode(file_get_contents($GLOBALS['dataFile']), true);
+    $items[] = [
         'name' => $input['name'],
         'date' => $input['date'] ?? '',
         'desc' => $input['desc'] ?? ''
     ];
     
-    file_put_contents($dataFile, json_encode($sessions, JSON_PRETTY_PRINT));
-    echo json_encode(['success' => true, 'sessions' => $sessions]);
+    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+    echo json_encode(['success' => true, 'items' => $items]);
 }
 
 function deleteSession() {
@@ -74,10 +75,10 @@ function deleteSession() {
         return;
     }
 
-    $sessions = json_decode(file_get_contents($dataFile), true);
-    array_splice($sessions, $input['index'], 1);
-    file_put_contents($dataFile, json_encode($sessions, JSON_PRETTY_PRINT));
-    echo json_encode(['success' => true, 'sessions' => $sessions]);
+    $items = json_decode(file_get_contents($GLOBALS['dataFile']), true);
+    array_splice($items, $input['index'], 1);
+    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+    echo json_encode(['success' => true, 'items' => $items]);
 }
 
 function clearSessions() {
@@ -86,27 +87,32 @@ function clearSessions() {
     echo json_encode(['success' => true]);
 }
 
+// Alias for consistency with new type parameter system
+function clearItems() {
+    clearSessions();
+}
+
 function uploadSessions() {
     global $dataFile;
     $input = json_decode(file_get_contents('php://input'), true);
     
     if (!isset($input['sessions']) || !is_array($input['sessions'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Sessions array required']);
+        echo json_encode(['error' => 'Items array required']);
         return;
     }
 
-    // Validate each session has a name
+    // Validate each item has a name
     foreach ($input['sessions'] as $session) {
         if (!isset($session['name']) || empty($session['name'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'All sessions must have a name']);
+            echo json_encode(['error' => 'All items must have a name']);
             return;
         }
     }
 
-    $sessions = $input['sessions'];
-    file_put_contents($dataFile, json_encode($sessions, JSON_PRETTY_PRINT));
-    echo json_encode(['success' => true, 'sessions' => $sessions]);
+    $items = $input['sessions'];
+    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+    echo json_encode(['success' => true, 'items' => $items]);
 }
 ?>

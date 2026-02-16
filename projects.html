@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .admin-link { background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; }
+        .admin-link:hover { background-color: #0056b3; }
+        .projects-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .project-card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .project-card h3 { margin-top: 0; color: #333; }
+        .project-date { color: #666; font-size: 0.9em; }
+        .project-desc { margin-top: 10px; color: #555; line-height: 1.5; }
+        .no-projects { text-align: center; color: #999; padding: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Projects</h1>
+        <a href="projects_edit.html" class="admin-link">Admin Editor</a>
+    </div>
+
+    <div id="projectsContainer" class="projects-container">
+        <div class="no-projects">No projects yet</div>
+    </div>
+
+    <script>
+        function loadProjects() {
+            fetch('api.php?action=get&type=projects')
+                .then(res => res.json())
+                .then(projects => {
+                    const container = document.getElementById('projectsContainer');
+                    
+                    if (projects.length === 0) {
+                        container.innerHTML = '<div class="no-projects">No projects yet</div>';
+                        return;
+                    }
+
+                    container.innerHTML = projects.map(project => `
+                        <div class="project-card">
+                            <h3>${project.name}</h3>
+                            <div class="project-date">${project.date || 'No date specified'}</div>
+                            <div class="project-desc">${project.desc || ''}</div>
+                        </div>
+                    `).join('');
+                })
+                .catch(err => {
+                    console.error('Error loading projects:', err);
+                    document.getElementById('projectsContainer').innerHTML = '<div class="no-projects">Error loading projects</div>';
+                });
+        }
+
+        // Load projects on page load
+        loadProjects();
+
+        // Refresh projects when storage changes (in case admin editor is open in another tab)
+        window.addEventListener('storage', loadProjects);
+    </script>
+</body>
+</html>
