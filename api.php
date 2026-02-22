@@ -57,6 +57,10 @@ function addSession() {
     $items = json_decode(file_get_contents($GLOBALS['dataFile']), true);
     $items[] = [
         'name' => $input['name'],
+        'uid'  => $input['uid'] ?? '',
+        'email' => $input['email'] ?? '',
+        'phone' => $input['phone'] ?? '',
+        'role' => $input['role'] ?? '',
         'date' => $input['date'] ?? '',
         'desc' => $input['desc'] ?? ''
     ];

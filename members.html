@@ -16,52 +16,93 @@
         .member-date { color: #666; font-size: 0.9em; }
         .member-desc { margin-top: 10px; color: #555; line-height: 1.5; }
         .no-members { text-align: center; color: #999; padding: 40px; }
+        .hidden { display: none; }
+        .profile-section { background: white; padding: 20px; margin-bottom: 30px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Members</h1>
-        <a href="members_edit.html" class="admin-link">Admin Editor</a>
-    </div>
+    <div id="memberView">
+        <div class="header">
+            <h1>Members Directory</h1>
+            <button onclick="logoutMember()" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 3px;">Logout</button>
+        </div>
 
-    <div id="membersContainer" class="members-container">
-        <div class="no-members">No members yet</div>
+        <div id="myProfile" class="profile-section hidden">
+            <h2>Your Profile</h2>
+            <p><strong>Name:</strong> <span id="profileName"></span></p>
+            <p><strong>UID:</strong> <span id="profileUID"></span></p>
+            <p><strong>Email:</strong> <span id="profileEmail"></span></p>
+            <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
+            <p><strong>Role:</strong> <span id="profileRole"></span></p>
+            <p><strong>Joined:</strong> <span id="profileDate"></span></p>
+            <p><strong>Bio:</strong> <span id="profileDesc"></span></p>
+        </div>
+
+        <h2>All Members</h2>
+        <div id="membersContainer" class="members-container">
+            <div class="no-members">Loading members...</div>
+        </div>
     </div>
 
     <script>
-        function loadMembers() {
+        let currentUID = null;
+
+        function showMemberView(member, members) {
+            document.getElementById('myProfile').classList.remove('hidden');
+            document.getElementById('profileName').textContent = member.name;
+            document.getElementById('profileUID').textContent = member.uid;
+            document.getElementById('profileEmail').textContent = member.email || 'N/A';
+            document.getElementById('profilePhone').textContent = member.phone || 'N/A';
+            document.getElementById('profileRole').textContent = member.role || 'N/A';
+            document.getElementById('profileDate').textContent = member.date || 'N/A';
+            document.getElementById('profileDesc').textContent = member.desc || 'N/A';
+            
+            displayAllMembers(members);
+        }
+
+        function logoutMember() {
+            currentUID = null;
+            sessionStorage.removeItem('memberUID');
+            window.location.href = 'index.html';
+        }
+
+        function displayAllMembers(members) {
+            const container = document.getElementById('membersContainer');
+            
+            if (members.length === 0) {
+                container.innerHTML = '<div class="no-members">No members yet</div>';
+                return;
+            }
+
+            container.innerHTML = members.map(member => `
+                <div class="member-card">
+                    <h3>${member.name}${member.uid ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : ''}</h3>
+                    ${member.role ? `<div style="font-weight: bold; color: #007bff; margin: 5px 0;">${member.role}</div>` : ''}
+                    ${member.email ? `<div style="color: #666; font-size: 0.9em;">📧 ${member.email}</div>` : ''}
+                    ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📱 ${member.phone}</div>` : ''}
+                    ${member.date ? `<div style="color: #666; font-size: 0.9em;">📅 Joined: ${member.date}</div>` : ''}
+                    <div class="member-desc">${member.desc || ''}</div>
+                </div>
+            `).join('');
+        }
+
+        window.addEventListener('load', () => {
+            const savedUID = sessionStorage.getItem('memberUID');
+
             fetch('api.php?action=get&type=members')
                 .then(res => res.json())
                 .then(members => {
-                    const container = document.getElementById('membersContainer');
-                    
-                    if (members.length === 0) {
-                        container.innerHTML = '<div class="no-members">No members yet</div>';
-                        return;
+                    const member = savedUID ? members.find(m => m.uid === savedUID) : null;
+                    if (member) {
+                        currentUID = savedUID;
+                        showMemberView(member, members);
+                    } else {
+                        sessionStorage.removeItem('memberUID');
+                        displayAllMembers(members);
                     }
-
-                    container.innerHTML = members.map(member => `
-                        <div class="member-card">
-                            <h3>${member.name}${member.uid ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : ''}</h3>
-                            ${member.role ? `<div style="font-weight: bold; color: #007bff; margin: 5px 0;">${member.role}</div>` : ''}
-                            ${member.email ? `<div style="color: #666; font-size: 0.9em;">📧 ${member.email}</div>` : ''}
-                            ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📱 ${member.phone}</div>` : ''}
-                            ${member.date ? `<div style="color: #666; font-size: 0.9em;">📅 Joined: ${member.date}</div>` : ''}
-                            <div class="member-desc">${member.desc || ''}</div>
-                        </div>
-                    `).join('');
                 })
-                .catch(err => {
-                    console.error('Error loading members:', err);
-                    document.getElementById('membersContainer').innerHTML = '<div class="no-members">Error loading members</div>';
-                });
-        }
-
-        // Load members on page load
-        loadMembers();
-
-        // Refresh members when storage changes (in case admin editor is open in another tab)
-        window.addEventListener('storage', loadMembers);
+                .catch(err => console.error('Error loading members:', err));
+        });
     </script>
 </body>
 </html>
