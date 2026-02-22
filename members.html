@@ -24,7 +24,10 @@
     <div id="memberView">
         <div class="header">
             <h1>Members Directory</h1>
-            <button onclick="logoutMember()" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 3px;">Logout</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="window.location.href='index.html'" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 3px;">🏠 Home</button>
+                <button onclick="logoutMember()" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 3px;">Logout</button>
+            </div>
         </div>
 
         <div id="myProfile" class="profile-section hidden">
