@@ -5,12 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Member Editor</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; }
-        .login-panel, .admin-panel { border: 2px solid #333; padding: 20px; border-radius: 5px; }
-        input, textarea { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
-        button:hover { background-color: #0056b3; }
-        .member-item { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        :root {
+            --bg: #0b0b0c;
+            --panel: #111214;
+            --muted: #9aa6b2;
+            --card: #121215;
+            --accent: #2563eb;
+            --accent-hover: #1e4fd8;
+            --border: #222428;
+            --text: #e6eef2;
+            --input-bg: #0f1112;
+        }
+
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; background: var(--bg); color: var(--text); }
+        a { color: #9ecbff; }
+        .login-panel, .admin-panel { background: var(--panel); border: 1px solid var(--border); padding: 20px; border-radius: 8px; color: var(--text); }
+        input, textarea, select { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; }
+        label { color: var(--muted); display:block; margin-top:8px; }
+        button { padding: 10px 20px; background-color: var(--accent); color: white; border: none; cursor: pointer; border-radius: 6px; }
+        button:hover { background-color: var(--accent-hover); }
+        .member-item { background: var(--card); padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); }
         .hidden { display: none; }
     </style>
 </head>
