@@ -62,6 +62,8 @@ function addSession() {
         'phone' => $input['phone'] ?? '',
         'role' => $input['role'] ?? '',
         'date' => $input['date'] ?? '',
+        'deadline' => $input['deadline'] ?? '',
+        'members' => $input['members'] ?? [],
         'desc' => $input['desc'] ?? ''
     ];
     

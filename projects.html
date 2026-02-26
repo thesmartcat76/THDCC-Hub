@@ -47,7 +47,9 @@
                         <div class="project-card">
                             <h3>${project.name}</h3>
                             <div class="project-date">${project.date || 'No date specified'}</div>
+                            <div class="project-deadline">Deadline: ${project.deadline || 'None'}</div>
                             <div class="project-desc">${project.desc || ''}</div>
+                            <div class="project-members">Members: ${Array.isArray(project.members) ? project.members.join(', ') : (project.members || 'None')}</div>
                         </div>
                     `).join('');
                 })

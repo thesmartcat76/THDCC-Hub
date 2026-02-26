@@ -34,6 +34,12 @@
         <input type="text" id="projectName" placeholder="Project Name">
         <input type="date" id="projectDate" placeholder="Date">
         <textarea id="projectDesc" placeholder="Description"></textarea>
+        <label for="projectMembers">Working Members</label>
+        <select id="projectMembers" multiple style="height: 120px;">
+            <!-- Populated dynamically -->
+        </select>
+        <label for="projectDeadline">Deadline</label>
+        <input type="date" id="projectDeadline" placeholder="Deadline">
         <button onclick="addProject()">Add Project</button>
 
         <h2>Projects</h2>
@@ -61,6 +67,7 @@
                 document.getElementById('loginPanel').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 loadProjects();
+                loadMembers();
             } else {
                 alert('Invalid password');
             }
@@ -83,10 +90,24 @@
                 .catch(err => console.error('Error loading projects:', err));
         }
 
+        // Load members to populate working members selector
+        function loadMembers() {
+            fetch('api.php?action=get&type=members')
+                .then(res => res.json())
+                .then(members => {
+                    const sel = document.getElementById('projectMembers');
+                    sel.innerHTML = members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+                })
+                .catch(err => console.error('Error loading members:', err));
+        }
+
         function addProject() {
             const name = document.getElementById('projectName').value;
             const date = document.getElementById('projectDate').value;
             const desc = document.getElementById('projectDesc').value;
+            const deadline = document.getElementById('projectDeadline').value;
+            const membersSel = document.getElementById('projectMembers');
+            const members = Array.from(membersSel.selectedOptions).map(o => o.value);
 
             if (!name) {
                 alert('Project name is required');
@@ -96,7 +117,7 @@
             fetch('api.php?action=add&type=projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, date, desc })
+                body: JSON.stringify({ name, date, desc, members, deadline })
             })
             .then(res => res.json())
             .then(data => {
@@ -105,6 +126,8 @@
                 document.getElementById('projectName').value = '';
                 document.getElementById('projectDate').value = '';
                 document.getElementById('projectDesc').value = '';
+                    document.getElementById('projectDeadline').value = '';
+                    document.getElementById('projectMembers').selectedIndex = -1;
             })
             .catch(err => console.error('Error adding project:', err));
         }
@@ -114,6 +137,8 @@
             list.innerHTML = projects.map((p, i) => `
                 <div class="project-item">
                     <strong>${p.name}</strong> - ${p.date || 'No date'}
+                    <div>Deadline: ${p.deadline || 'No deadline'}</div>
+                    <div>Members: ${Array.isArray(p.members) ? p.members.join(', ') : (p.members || 'None')}</div>
                     <p>${p.desc || ''}</p>
                     <button onclick="deleteProject(${i})">Delete</button>
                 </div>
