@@ -55,6 +55,19 @@
             <p><strong>Bio:</strong> <span id="profileDesc"></span></p>
         </div>
 
+        <div id="dashboard" class="profile-section hidden">
+            <h2>Dashboard</h2>
+            <div id="nearestSession">
+                <h3>Nearest Session</h3>
+                <div id="nearestSessionContainer">Loading sessions...</div>
+            </div>
+
+            <div id="myProjects" style="margin-top:16px;">
+                <h3>Your Projects</h3>
+                <div id="myProjectsContainer">Loading projects...</div>
+            </div>
+        </div>
+
         <h2>All Members</h2>
         <div id="membersContainer" class="members-container">
             <div class="no-members">Loading members...</div>
@@ -103,6 +116,8 @@
             document.getElementById('profileDesc').textContent = member.desc || 'N/A';
             
             displayAllMembers(members);
+            // Load dashboard info (nearest session and projects for this member)
+            loadDashboard(member);
         }
 
         function logoutMember() {
@@ -112,6 +127,96 @@
             document.getElementById('loginPanel').classList.remove('hidden');
             document.getElementById('memberView').classList.add('hidden');
             document.getElementById('myProfile').classList.add('hidden');
+        }
+
+        function loadDashboard(member) {
+            // Show dashboard container
+            document.getElementById('dashboard').classList.remove('hidden');
+
+            // Fetch sessions and projects in parallel
+            Promise.all([
+                fetch('api.php?action=get&type=sessions').then(r => r.json()).catch(() => []),
+                fetch('api.php?action=get&type=projects').then(r => r.json()).catch(() => [])
+            ]).then(([sessions, projects]) => {
+                renderNearestSession(sessions, member);
+                renderProjectsForMember(projects, member);
+            }).catch(err => {
+                console.error('Error loading dashboard data:', err);
+                document.getElementById('nearestSessionContainer').textContent = 'Error loading sessions';
+                document.getElementById('myProjectsContainer').textContent = 'Error loading projects';
+            });
+        }
+
+        function renderNearestSession(sessions, member) {
+            const container = document.getElementById('nearestSessionContainer');
+            if (!Array.isArray(sessions) || sessions.length === 0) {
+                container.innerHTML = '<div class="no-sessions">No sessions scheduled</div>';
+                return;
+            }
+
+            const now = new Date();
+            // Parse session date strings and find the nearest upcoming session
+            const upcoming = sessions
+                .map(s => ({...s, _date: s.date ? new Date(s.date) : null}))
+                .filter(s => s._date && s._date >= now)
+                .sort((a,b) => a._date - b._date);
+
+            let chosen = null;
+            if (upcoming.length > 0) chosen = upcoming[0];
+            else {
+                // Fallback: the most recent past session
+                const past = sessions
+                    .map(s => ({...s, _date: s.date ? new Date(s.date) : null}))
+                    .filter(s => s._date)
+                    .sort((a,b) => b._date - a._date);
+                if (past.length > 0) chosen = past[0];
+            }
+
+            if (!chosen) {
+                container.innerHTML = '<div class="no-sessions">No sessions available</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div style="padding:8px; border:1px solid #e0e0e0; border-radius:4px; background:#fbfbfb;">
+                    <strong>${chosen.name || 'Untitled'}</strong>
+                    <div style="color:#666; font-size:0.95em;">${chosen.date || 'No date specified'}</div>
+                    <div style="margin-top:8px; color:#444;">${chosen.desc || ''}</div>
+                </div>
+            `;
+        }
+
+        function renderProjectsForMember(projects, member) {
+            const container = document.getElementById('myProjectsContainer');
+            if (!Array.isArray(projects) || projects.length === 0) {
+                container.innerHTML = '<div class="no-projects">No projects yet</div>';
+                return;
+            }
+
+            const matches = projects.filter(p => {
+                if (!p) return false;
+                const mems = p.members;
+                if (Array.isArray(mems)) {
+                    return mems.includes(member.uid) || mems.includes(member.name);
+                }
+                if (typeof mems === 'string') {
+                    return mems.includes(member.uid) || mems.includes(member.name);
+                }
+                return false;
+            });
+
+            if (matches.length === 0) {
+                container.innerHTML = '<div class="no-projects">You are not assigned to any projects</div>';
+                return;
+            }
+
+            container.innerHTML = matches.map(project => `
+                <div style="padding:10px; border:1px solid #e8e8e8; border-radius:4px; background:#fff; margin-bottom:8px;">
+                    <strong>${project.name || 'Untitled'}</strong>
+                    <div style="color:#666; font-size:0.95em;">${project.date || ''} ${project.deadline ? '• Deadline: ' + project.deadline : ''}</div>
+                    <div style="margin-top:6px; color:#444;">${project.desc || ''}</div>
+                </div>
+            `).join('');
         }
 
         function displayAllMembers(members) {
