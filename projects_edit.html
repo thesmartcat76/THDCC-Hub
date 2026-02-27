@@ -48,6 +48,8 @@
         <input type="text" id="projectName" placeholder="Project Name">
         <input type="date" id="projectDate" placeholder="Date">
         <textarea id="projectDesc" placeholder="Description"></textarea>
+        <label for="projectLinks">Links (optional - one per line or comma-separated)</label>
+        <textarea id="projectLinks" placeholder="https://example.com\nhttps://repo.example.com"></textarea>
         <label for="projectMembers">Working Members</label>
         <select id="projectMembers" multiple style="height: 120px;">
             <!-- Populated dynamically -->
@@ -122,6 +124,11 @@
             const deadline = document.getElementById('projectDeadline').value;
             const membersSel = document.getElementById('projectMembers');
             const members = Array.from(membersSel.selectedOptions).map(o => o.value);
+            const linksRaw = document.getElementById('projectLinks').value.trim();
+            let links = [];
+            if (linksRaw) {
+                links = linksRaw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+            }
 
             if (!name) {
                 alert('Project name is required');
@@ -131,7 +138,7 @@
             fetch('api.php?action=add&type=projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, date, desc, members, deadline })
+                body: JSON.stringify({ name, date, desc, members, deadline, links })
             })
             .then(res => res.json())
             .then(data => {
@@ -141,6 +148,7 @@
                 document.getElementById('projectDate').value = '';
                 document.getElementById('projectDesc').value = '';
                     document.getElementById('projectDeadline').value = '';
+                    document.getElementById('projectLinks').value = '';
                     document.getElementById('projectMembers').selectedIndex = -1;
             })
             .catch(err => console.error('Error adding project:', err));
@@ -153,6 +161,7 @@
                     <strong>${p.name}</strong> - ${p.date || 'No date'}
                     <div>Deadline: ${p.deadline || 'No deadline'}</div>
                     <div>Members: ${Array.isArray(p.members) ? p.members.join(', ') : (p.members || 'None')}</div>
+                    ${p.links && p.links.length ? `<div style="margin-top:8px;">Links:\n${p.links.map(l => `<div><a href="${l}" target="_blank" rel="noopener noreferrer">${l}</a></div>`).join('')}</div>` : ''}
                     <p>${p.desc || ''}</p>
                     <button onclick="deleteProject(${i})">Delete</button>
                 </div>

@@ -21,6 +21,12 @@
         .login-panel button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
         .login-panel button:hover { background-color: #0056b3; }
         .hidden { display: none; }
+        /* Dashboard horizontal row */
+        #dashboard .dash-row { display: flex; gap: 16px; align-items: flex-start; }
+        #dashboard .dash-row > div { flex: 1; min-width: 220px; }
+        @media (max-width: 700px) {
+            #dashboard .dash-row { flex-direction: column; }
+        }
         .profile-section { background: white; padding: 20px; margin-bottom: 30px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
     </style>
 </head>
@@ -57,14 +63,16 @@
 
         <div id="dashboard" class="profile-section hidden">
             <h2>Dashboard</h2>
-            <div id="nearestSession">
+            <div class="dash-row">
+                <div id="nearestSession">
                 <h3>Nearest Session</h3>
                 <div id="nearestSessionContainer">Loading sessions...</div>
-            </div>
+                </div>
 
-            <div id="myProjects" style="margin-top:16px;">
+                <div id="myProjects">
                 <h3>Your Projects</h3>
                 <div id="myProjectsContainer">Loading projects...</div>
+                </div>
             </div>
         </div>
 
