@@ -88,7 +88,7 @@
         }
 
         function loadSessions() {
-            fetch('api.php?action=get')
+            fetch('api.php?action=get&type=sessions')  // was: fetch('api.php?action=get')
                 .then(res => res.json())
                 .then(data => {
                     sessions = data;
@@ -107,7 +107,7 @@
                 return;
             }
 
-            fetch('api.php?action=add', {
+            fetch('api.php?action=add&type=sessions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, date, desc })
@@ -135,7 +135,7 @@
         }
 
         function deleteSession(index) {
-            fetch('api.php?action=delete', {
+            fetch('api.php?action=delete&type=sessions', {  // was: fetch('api.php?action=add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ index })
@@ -184,7 +184,7 @@
                         return;
                     }
 
-                    fetch('api.php?action=upload', {
+                   fetch('api.php?action=upload&type=sessions', {  // was: fetch('api.php?action=upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ sessions: uploadedSessions })
@@ -209,7 +209,7 @@
 
         function clearAll() {
             if (confirm('Clear all sessions?')) {
-                fetch('api.php?action=clear', { method: 'POST' })
+                fetch('api.php?action=clear&type=sessions', { method: 'POST' })  // was: fetch('api.php?action=clear', {
                     .then(res => res.json())
                     .then(() => {
                         sessions = [];
