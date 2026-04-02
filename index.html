@@ -3,97 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members</title>
+    <title>THDCC Hub</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; max-width: 960px; margin: 50px auto; padding: 20px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .admin-link { background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; }
+        .admin-link { background-color: #007bff; color: white; padding: 6px 12px; text-decoration: none; border-radius: 3px; font-size: 0.8em; }
         .admin-link:hover { background-color: #0056b3; }
-        .members-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-        .member-card { background: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .member-card h3 { margin-top: 0; color: #333; }
-        .member-date { color: #666; font-size: 0.9em; }
-        .member-desc { margin-top: 10px; color: #555; line-height: 1.5; }
-        .no-members { text-align: center; color: #999; padding: 40px; }
-        .login-panel { border: 2px solid #333; padding: 20px; border-radius: 5px; max-width: 400px; margin: 50px auto; }
-        .login-panel input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
-        .login-panel button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 3px; }
-        .login-panel button:hover { background-color: #0056b3; }
         .hidden { display: none; }
-        /* Dashboard horizontal row */
-        #dashboard .dash-row { display: flex; gap: 16px; align-items: flex-start; }
-        #dashboard .dash-row > div { flex: 1; min-width: 220px; }
-        @media (max-width: 700px) {
-            #dashboard .dash-row { flex-direction: column; }
-        }
-        .profile-section { background: white; padding: 20px; margin-bottom: 30px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* Login */
+        .login-panel { border: 2px solid #333; padding: 24px; border-radius: 8px; max-width: 400px; margin: 80px auto; }
+        .login-panel input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .login-panel button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 1em; }
+        .login-panel button:hover { background-color: #0056b3; }
+
+        /* Cards / sections */
+        .profile-section { background: white; padding: 20px; margin-bottom: 24px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .profile-section > h2 { margin-top: 0; }
+
+        /* Dashboard 3-column row */
+        .dash-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        @media (max-width: 700px) { .dash-row { grid-template-columns: 1fr; } }
+
+        .dash-card { background: white; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
+        .dash-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .dash-card-header h3 { margin: 0; font-size: 1em; }
+        .dash-card-header a.title-link { text-decoration: none; color: inherit; font-weight: bold; font-size: 1em; }
+        .dash-card-header a.title-link:hover { color: #007bff; }
+
+        .item-row { padding: 8px; border: 1px solid #e0e0e0; border-radius: 4px; background: #fbfbfb; margin-bottom: 6px; }
+        .item-row strong { display: block; font-size: 0.95em; }
+        .item-row .sub { color: #666; font-size: 0.85em; display: block; }
+
+        .view-all-link { display: block; text-align: center; margin-top: auto; padding-top: 10px; font-size: 0.85em; color: #007bff; text-decoration: none; border-top: 1px solid #eee; }
+        .view-all-link:hover { text-decoration: underline; }
+
+        .edit-btn { background-color: #007bff; color: white; padding: 4px 8px; text-decoration: none; border-radius: 3px; font-size: 0.75em; white-space: nowrap; }
+        .edit-btn:hover { background-color: #0056b3; }
     </style>
 </head>
 <body>
+
+    <!-- ── Login ─────────────────────────────────────────────────── -->
     <div id="loginPanel" class="login-panel">
-        <h2>Member Login</h2>
+        <h2 style="margin-top:0;">THDCC Member Login</h2>
         <input type="text" id="uidInput" placeholder="Enter your UID">
-        <button onclick="loginMember()">Login</button>
-        <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 15px;">
-            Not a member? <a href="members_edit.html">Admin Page</a>
+        <button onclick="loginMember()">Sign In</button>
+        <p style="text-align:center; color:#666; font-size:0.9em; margin-top:15px;">
+            Need access? <a href="members_edit.html">Admin page</a>
         </p>
     </div>
 
-    <div id="loadingPanel" class="login-panel hidden" style="text-align: center;">
-        <p style="font-size: 1.2em; color: #555;">🔄 Signing you in...</p>
+    <!-- ── Loading spinner ───────────────────────────────────────── -->
+    <div id="loadingPanel" class="login-panel hidden" style="text-align:center;">
+        <p style="font-size:1.2em; color:#555;">🔄 Signing you in…</p>
     </div>
 
+    <!-- ── Authenticated view ────────────────────────────────────── -->
     <div id="memberView" class="hidden">
+
         <div class="header">
-            <h1>Members Directory</h1>
-            <button onclick="logoutMember()" style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; cursor: pointer; border-radius: 3px;">Logout</button>
+            <h1>THDCC Hub</h1>
+            <button onclick="logoutMember()"
+                    style="background:#6c757d;color:white;padding:10px 20px;border:none;cursor:pointer;border-radius:4px;">
+                Logout
+            </button>
         </div>
 
+        <!-- Your Profile -->
         <div id="myProfile" class="profile-section hidden">
             <h2>Your Profile</h2>
-            <p><strong>Name:</strong> <span id="profileName"></span></p>
-            <p><strong>UID:</strong> <span id="profileUID"></span></p>
-            <p><strong>Email:</strong> <span id="profileEmail"></span></p>
-            <p><strong>Phone:</strong> <span id="profilePhone"></span></p>
-            <p><strong>Role:</strong> <span id="profileRole"></span></p>
+            <p><strong>Name:</strong>   <span id="profileName"></span></p>
+            <p><strong>UID:</strong>    <span id="profileUID"></span></p>
+            <p><strong>Email:</strong>  <span id="profileEmail"></span></p>
+            <p><strong>Phone:</strong>  <span id="profilePhone"></span></p>
+            <p><strong>Role:</strong>   <span id="profileRole"></span></p>
             <p><strong>Joined:</strong> <span id="profileDate"></span></p>
-            <p><strong>Bio:</strong> <span id="profileDesc"></span></p>
+            <p><strong>Bio:</strong>    <span id="profileDesc"></span></p>
         </div>
 
+        <!-- Dashboard -->
         <div id="dashboard" class="profile-section hidden">
             <h2>Dashboard</h2>
             <div class="dash-row">
-                <div id="nearestSession">
-                <h3 style="display:flex; align-items:center; justify-content:space-between;">Nearest Session <a href="sessions_edit.html" class="admin-link" style="padding:6px 10px; font-size:0.85em;">Edit</a></h3>
-                <div id="nearestSessionContainer">Loading sessions...</div>
+
+                <!-- Sessions card -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <a href="sessions.html" class="title-link">📅 Sessions</a>
+                        <a href="sessions_edit.html" class="edit-btn">Edit</a>
+                    </div>
+                    <div id="nearestSessionContainer">Loading…</div>
+                    <a href="sessions.html" class="view-all-link">View all sessions →</a>
                 </div>
 
-                <div id="myProjects">
-                <h3 style="display:flex; align-items:center; justify-content:space-between;">Your Projects <a href="projects_edit.html" class="admin-link" style="padding:6px 10px; font-size:0.85em;">Edit</a></h3>
-                <div id="myProjectsContainer">Loading projects...</div>
+                <!-- Projects card -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <a href="projects.html" class="title-link">🗂 My Projects</a>
+                        <a href="projects_edit.html" class="edit-btn">Edit</a>
+                    </div>
+                    <div id="myProjectsContainer">Loading…</div>
+                    <a href="projects.html" class="view-all-link">View all projects →</a>
                 </div>
+
+                <!-- Members card -->
+                <div class="dash-card">
+                    <div class="dash-card-header">
+                        <a href="members.html" class="title-link">👥 Members</a>
+                        <a href="members_edit.html" class="edit-btn">Edit</a>
+                    </div>
+                    <div id="allMembersContainer">Loading…</div>
+                    <a href="members.html" class="view-all-link">View all members →</a>
+                </div>
+
             </div>
         </div>
 
-        <h2>All Members</h2>
-        <div id="membersContainer" class="members-container">
-            <div class="no-members">Loading members...</div>
-        </div>
-    </div>
+    </div><!-- /#memberView -->
 
     <script>
+        const DASH_LIMIT = 3; // max items shown per card
         let currentUID = null;
 
+        /* ── Auth ──────────────────────────────────────────────── */
         function loginMember() {
             const uid = document.getElementById('uidInput').value.trim();
-            if (!uid) {
-                alert('Please enter your UID');
-                return;
-            }
+            if (!uid) { alert('Please enter your UID'); return; }
 
             fetch('api.php?action=get&type=members')
-                .then(res => res.json())
+                .then(r => r.json())
                 .then(members => {
                     const member = members.find(m => m.uid === uid);
                     if (member) {
@@ -104,28 +145,7 @@
                         alert('UID not found. Please check and try again.');
                     }
                 })
-                .catch(err => {
-                    console.error('Error logging in:', err);
-                    alert('Error logging in');
-                });
-        }
-
-        function showMemberView(member, members) {
-            document.getElementById('loginPanel').classList.add('hidden');
-            document.getElementById('memberView').classList.remove('hidden');
-            
-            document.getElementById('myProfile').classList.remove('hidden');
-            document.getElementById('profileName').textContent = member.name;
-            document.getElementById('profileUID').textContent = member.uid;
-            document.getElementById('profileEmail').textContent = member.email || 'N/A';
-            document.getElementById('profilePhone').textContent = member.phone || 'N/A';
-            document.getElementById('profileRole').textContent = member.role || 'N/A';
-            document.getElementById('profileDate').textContent = member.date || 'N/A';
-            document.getElementById('profileDesc').textContent = member.desc || 'N/A';
-            
-            displayAllMembers(members);
-            // Load dashboard info (nearest session and projects for this member)
-            loadDashboard(member);
+                .catch(err => { console.error(err); alert('Error signing in'); });
         }
 
         function logoutMember() {
@@ -135,146 +155,144 @@
             document.getElementById('loginPanel').classList.remove('hidden');
             document.getElementById('memberView').classList.add('hidden');
             document.getElementById('myProfile').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
         }
 
-        function loadDashboard(member) {
-            // Show dashboard container
+        /* ── Show view after login ─────────────────────────────── */
+        function showMemberView(member, members) {
+            document.getElementById('loginPanel').classList.add('hidden');
+            document.getElementById('loadingPanel').classList.add('hidden');
+            document.getElementById('memberView').classList.remove('hidden');
+
+            // Populate profile
+            document.getElementById('myProfile').classList.remove('hidden');
+            document.getElementById('profileName').textContent  = member.name;
+            document.getElementById('profileUID').textContent   = member.uid;
+            document.getElementById('profileEmail').textContent = member.email || 'N/A';
+            document.getElementById('profilePhone').textContent = member.phone || 'N/A';
+            document.getElementById('profileRole').textContent  = member.role  || 'N/A';
+            document.getElementById('profileDate').textContent  = member.date  || 'N/A';
+            document.getElementById('profileDesc').textContent  = member.desc  || 'N/A';
+
+            loadDashboard(member, members);
+        }
+
+        /* ── Dashboard ─────────────────────────────────────────── */
+        function loadDashboard(member, members) {
+            // Show the dashboard section now that data is ready
             document.getElementById('dashboard').classList.remove('hidden');
 
-            // Fetch sessions and projects in parallel
-            Promise.all([
-                fetch('api.php?action=get&type=sessions').then(r => r.json()).catch(() => []),
-                fetch('api.php?action=get&type=projects').then(r => r.json()).catch(() => [])
-            ]).then(([sessions, projects]) => {
-                renderNearestSession(sessions, member);
-                renderProjectsForMember(projects, member);
-            }).catch(err => {
-                console.error('Error loading dashboard data:', err);
-                document.getElementById('nearestSessionContainer').textContent = 'Error loading sessions';
-                document.getElementById('myProjectsContainer').textContent = 'Error loading projects';
-            });
+            // 1. Fetch and render Sessions
+            fetch('api.php?action=get&type=sessions')
+                .then(r => r.json())
+                .then(sessions => {
+                    renderNearestSessions(sessions);
+                })
+                .catch(err => console.error("Session fetch error:", err));
+
+            // 2. Fetch and render Projects
+            fetch('api.php?action=get&type=projects')
+                .then(r => r.json())
+                .then(projects => {
+                    renderProjectsForMember(projects, member);
+                })
+                .catch(err => console.error("Project fetch error:", err));
+
+            // 3. Render members using the existing list from login
+            renderAllMembers(members);
         }
 
-        function renderNearestSession(sessions, member) {
-            const container = document.getElementById('nearestSessionContainer');
-            if (!Array.isArray(sessions) || sessions.length === 0) {
-                container.innerHTML = '<div class="no-sessions">No sessions scheduled</div>';
-                return;
-            }
+        /* ── Rendering Helpers ─────────────────────────────────── */
+        function renderNearestSessions(sessions) {
+    const el = document.getElementById('nearestSessionContainer');
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+        el.innerHTML = '<span class="sub">No sessions scheduled</span>'; return;
+    }
+    const now = new Date();
+    const withDates = sessions.map(s => ({ ...s, _d: s.date ? new Date(s.date) : null }));
+    const upcoming  = withDates.filter(s => s._d && s._d >= now).sort((a,b) => a._d - b._d);
+    
+    // Change DASH_LIMIT to 1 here to only show the single nearest session
+    const toShow = upcoming.length > 0
+        ? upcoming.slice(0, 1) 
+        : withDates.filter(s => s._d).sort((a,b) => b._d - a._d).slice(0, 1);
 
-            const now = new Date();
-            // Parse session date strings and find the nearest upcoming session
-            const upcoming = sessions
-                .map(s => ({...s, _date: s.date ? new Date(s.date) : null}))
-                .filter(s => s._date && s._date >= now)
-                .sort((a,b) => a._date - b._date);
-
-            let chosen = null;
-            if (upcoming.length > 0) chosen = upcoming[0];
-            else {
-                // Fallback: the most recent past session
-                const past = sessions
-                    .map(s => ({...s, _date: s.date ? new Date(s.date) : null}))
-                    .filter(s => s._date)
-                    .sort((a,b) => b._date - a._date);
-                if (past.length > 0) chosen = past[0];
-            }
-
-            if (!chosen) {
-                container.innerHTML = '<div class="no-sessions">No sessions available</div>';
-                return;
-            }
-
-            container.innerHTML = `
-                <div style="padding:8px; border:1px solid #e0e0e0; border-radius:4px; background:#fbfbfb;">
-                    <strong>${chosen.name || 'Untitled'}</strong>
-                    <div style="color:#666; font-size:0.95em;">${chosen.date || 'No date specified'}</div>
-                    <div style="margin-top:8px; color:#444;">${chosen.desc || ''}</div>
-                </div>
-            `;
-        }
+    el.innerHTML = toShow.map(s => `
+        <div class="item-row">
+            <strong>${s.name || 'Untitled'}</strong>
+            <span class="sub">${s.date || 'No date'}</span>
+        </div>`).join('');
+}
 
         function renderProjectsForMember(projects, member) {
-            const container = document.getElementById('myProjectsContainer');
+            const el = document.getElementById('myProjectsContainer');
             if (!Array.isArray(projects) || projects.length === 0) {
-                container.innerHTML = '<div class="no-projects">No projects yet</div>';
-                return;
+                el.innerHTML = '<span class="sub">No projects yet</span>'; return;
             }
-
-            const matches = projects.filter(p => {
-                if (!p) return false;
-                const mems = p.members;
-                if (Array.isArray(mems)) {
-                    return mems.includes(member.uid) || mems.includes(member.name);
-                }
-                if (typeof mems === 'string') {
-                    return mems.includes(member.uid) || mems.includes(member.name);
-                }
+            const mine = projects.filter(p => {
+                const m = p.members;
+                if (Array.isArray(m))       return m.includes(member.uid) || m.includes(member.name);
+                if (typeof m === 'string')  return m.includes(member.uid) || m.includes(member.name);
                 return false;
             });
-
-            if (matches.length === 0) {
-                container.innerHTML = '<div class="no-projects">You are not assigned to any projects</div>';
-                return;
+            if (mine.length === 0) {
+                el.innerHTML = '<span class="sub">Not assigned to any projects</span>'; return;
             }
-
-            container.innerHTML = matches.map(project => `
-                <div style="padding:10px; border:1px solid #e8e8e8; border-radius:4px; background:#fff; margin-bottom:8px;">
-                    <strong>${project.name || 'Untitled'}</strong>
-                    <div style="color:#666; font-size:0.95em;">${project.date || ''} ${project.deadline ? '• Deadline: ' + project.deadline : ''}</div>
-                    <div style="margin-top:6px; color:#444;">${project.desc || ''}</div>
-                </div>
-            `).join('');
+            el.innerHTML = mine.slice(0, DASH_LIMIT).map(p => `
+                <div class="item-row">
+                    <strong>${p.name || 'Untitled'}</strong>
+                    <span class="sub">${p.date || ''}${p.deadline ? ' · Due: ' + p.deadline : ''}</span>
+                    ${p.desc ? `<span class="sub">${p.desc}</span>` : ''}
+                </div>`).join('');
         }
 
-        function displayAllMembers(members) {
-            const container = document.getElementById('membersContainer');
-            
-            if (members.length === 0) {
-                container.innerHTML = '<div class="no-members">No members yet</div>';
-                return;
-            }
+        function renderAllMembers(members) {
+    const el = document.getElementById('allMembersContainer');
+    if (!Array.isArray(members) || members.length === 0) {
+        el.innerHTML = '<span class="sub">No members yet</span>'; 
+        return;
+    }
+    
+    el.innerHTML = members.slice(0, DASH_LIMIT).map(m => {
+        const isMe = m.uid && m.uid === currentUID;
+        // Logic: Only show the UID if isMe is true
+        const uidDisplay = isMe ? ` <span style="color:#999;font-size:0.8em;">(${m.uid})</span>` : '';
+        const meTag = isMe ? ' <span style="color:#28a745;font-size:0.8em;">(you)</span>' : '';
 
-            container.innerHTML = members.map(member => `
-                <div class="member-card">
-                    <h3>${member.name}${member.uid ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : ''}</h3>
-                    ${member.role ? `<div style="font-weight: bold; color: #007bff; margin: 5px 0;">${member.role}</div>` : ''}
-                    ${member.email ? `<div style="color: #666; font-size: 0.9em;">📧 ${member.email}</div>` : ''}
-                    ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📱 ${member.phone}</div>` : ''}
-                    ${member.date ? `<div style="color: #666; font-size: 0.9em;">📅 Joined: ${member.date}</div>` : ''}
-                    <div class="member-desc">${member.desc || ''}</div>
-                </div>
-            `).join('');
-        }
-
+        return `
+        <div class="item-row">
+            <strong>${m.name}${uidDisplay}${meTag}</strong>
+            ${m.role  ? `<span class="sub" style="color:#007bff;">${m.role}</span>` : ''}
+            ${m.email ? `<span class="sub">📧 ${m.email}</span>` : ''}
+        </div>`;
+    }).join('');
+}
+        /* ── Auto-login from session ───────────────────────────── */
         window.addEventListener('load', () => {
             const savedUID = sessionStorage.getItem('memberUID');
-            if (savedUID) {
-                // Hide login panel and show a loading state while we verify the UID
-                document.getElementById('loginPanel').classList.add('hidden');
-                document.getElementById('loadingPanel').classList.remove('hidden');
+            if (!savedUID) return;
 
-                fetch('api.php?action=get&type=members')
-                    .then(res => res.json())
-                    .then(members => {
-                        const member = members.find(m => m.uid === savedUID);
-                        if (member) {
-                            currentUID = savedUID;
-                            document.getElementById('loadingPanel').classList.add('hidden');
-                            showMemberView(member, members);
-                        } else {
-                            // Saved UID is no longer valid, fall back to login
-                            sessionStorage.removeItem('memberUID');
-                            document.getElementById('loadingPanel').classList.add('hidden');
-                            document.getElementById('loginPanel').classList.remove('hidden');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error loading saved session:', err);
+            document.getElementById('loginPanel').classList.add('hidden');
+            document.getElementById('loadingPanel').classList.remove('hidden');
+
+            fetch('api.php?action=get&type=members')
+                .then(r => r.json())
+                .then(members => {
+                    const member = members.find(m => m.uid === savedUID);
+                    if (member) {
+                        currentUID = savedUID;
+                        showMemberView(member, members);
+                    } else {
+                        sessionStorage.removeItem('memberUID');
                         document.getElementById('loadingPanel').classList.add('hidden');
                         document.getElementById('loginPanel').classList.remove('hidden');
-                    });
-            }
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('loadingPanel').classList.add('hidden');
+                    document.getElementById('loginPanel').classList.remove('hidden');
+                });
         });
     </script>
 </body>

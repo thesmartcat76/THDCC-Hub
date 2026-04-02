@@ -25,12 +25,15 @@
         button { padding: 10px 20px; background-color: var(--accent); color: white; border: none; cursor: pointer; border-radius: 6px; }
         button:hover { background-color: var(--accent-hover); }
         .project-item { background: var(--card); padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid rgba(255,255,255,0.02); }
+        .project-item strong { display: block; margin-bottom: 4px; }
+        .project-item .meta { color: var(--muted); font-size: 0.88em; margin-bottom: 6px; }
+        .btn-row { display: flex; gap: 8px; margin-top: 8px; }
         .hidden { display: none; }
     </style>
 </head>
 <body>
     <h1>Admin Project Editor</h1>
-    
+
     <div id="loginPanel" class="login-panel">
         <h2>Enter Password</h2>
         <input type="password" id="passwordInput" placeholder="Password">
@@ -42,44 +45,48 @@
             <h2 style="margin: 0;">Admin Panel</h2>
             <div>
                 <a href="projects.html" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 3px; margin-right: 10px; display: inline-block;">← Back to Projects</a>
-                <button onclick="logout()" style="float: right;">Logout</button>
+                <button onclick="logout()">Logout</button>
             </div>
         </div>
-        <input type="text" id="projectName" placeholder="Project Name">
-        <input type="date" id="projectDate" placeholder="Date">
+
+        <input type="text" id="projectName" placeholder="Project Name" required>
+        <input type="date" id="projectDate">
         <textarea id="projectDesc" placeholder="Description"></textarea>
-        <label for="projectLinks">Links (optional - one per line or comma-separated)</label>
-        <textarea id="projectLinks" placeholder="https://example.com\nhttps://repo.example.com"></textarea>
-        <label for="projectMembers">Working Members</label>
-        <select id="projectMembers" multiple style="height: 120px;">
-            <!-- Populated dynamically -->
-        </select>
+        <label for="projectLinks">Links (one per line)</label>
+        <textarea id="projectLinks" placeholder="https://example.com"></textarea>
+        <label for="projectMembers">Working Members (hold Ctrl/Cmd to select multiple)</label>
+        <select id="projectMembers" multiple style="height: 120px;"></select>
         <label for="projectDeadline">Deadline</label>
-        <input type="date" id="projectDeadline" placeholder="Deadline">
-        <button onclick="addProject()">Add Project</button>
+        <input type="date" id="projectDeadline">
+
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button id="saveBtn" onclick="saveProject()">Add Project</button>
+            <button id="cancelBtn" onclick="resetForm()" style="background:#6c757d; display:none;">Cancel Edit</button>
+        </div>
 
         <h2>Projects</h2>
         <div id="projectsList"></div>
 
-        <h2>Export/Import</h2>
+        <h2>Export / Import</h2>
         <div style="margin-bottom: 15px;">
-            <label for="fileUpload" style="display: block; margin-bottom: 10px;">Upload JSON File:</label>
-            <input type="file" id="fileUpload" accept=".json" style="margin-bottom: 10px;">
+            <label for="fileUpload">Upload JSON File:</label>
+            <input type="file" id="fileUpload" accept=".json">
             <button onclick="uploadJSON()">Upload Projects</button>
         </div>
-        <button onclick="downloadJSON()">Download JSON</button>
-        <button onclick="clearAll()">Clear All</button>
+        <div style="display:flex; gap:10px;">
+            <button onclick="downloadJSON()">Download JSON</button>
+            <button onclick="clearAll()" style="background:#dc3545;">Clear All</button>
+        </div>
     </div>
 
     <script>
-        const ADMIN_PASSWORD = 'THDCC2026'; // Change this
+        const ADMIN_PASSWORD = 'THDCC2026';
         let projects = [];
-        let isLoggedIn = false;
+        let editIndex = -1;
 
         function checkPassword() {
             const pwd = document.getElementById('passwordInput').value;
             if (pwd === ADMIN_PASSWORD) {
-                isLoggedIn = true;
                 document.getElementById('loginPanel').classList.add('hidden');
                 document.getElementById('adminPanel').classList.remove('hidden');
                 loadProjects();
@@ -90,7 +97,6 @@
         }
 
         function logout() {
-            isLoggedIn = false;
             document.getElementById('loginPanel').classList.remove('hidden');
             document.getElementById('adminPanel').classList.add('hidden');
             document.getElementById('passwordInput').value = '';
@@ -99,158 +105,156 @@
         function loadProjects() {
             fetch('api.php?action=get&type=projects')
                 .then(res => res.json())
-                .then(data => {
-                    projects = data;
-                    renderProjects();
-                })
+                .then(data => { projects = data; renderProjects(); })
                 .catch(err => console.error('Error loading projects:', err));
         }
 
-        // Load members to populate working members selector
         function loadMembers() {
             fetch('api.php?action=get&type=members')
                 .then(res => res.json())
                 .then(members => {
                     const sel = document.getElementById('projectMembers');
-                    sel.innerHTML = members.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+                    sel.innerHTML = members.map(m =>
+                        `<option value="${m.name}">${m.name}${m.uid ? ' (' + m.uid + ')' : ''}</option>`
+                    ).join('');
                 })
                 .catch(err => console.error('Error loading members:', err));
         }
 
-        function addProject() {
-            const name = document.getElementById('projectName').value;
-            const date = document.getElementById('projectDate').value;
-            const desc = document.getElementById('projectDesc').value;
+        function saveProject() {
+            const name     = document.getElementById('projectName').value.trim();
+            const date     = document.getElementById('projectDate').value;
+            const desc     = document.getElementById('projectDesc').value.trim();
             const deadline = document.getElementById('projectDeadline').value;
-            const membersSel = document.getElementById('projectMembers');
-            const members = Array.from(membersSel.selectedOptions).map(o => o.value);
             const linksRaw = document.getElementById('projectLinks').value.trim();
-            let links = [];
-            if (linksRaw) {
-                links = linksRaw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
-            }
+            const links    = linksRaw ? linksRaw.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean) : [];
+            const sel      = document.getElementById('projectMembers');
+            const members  = Array.from(sel.selectedOptions).map(o => o.value);
 
-            if (!name) {
-                alert('Project name is required');
-                return;
-            }
+            if (!name) { alert('Project name is required'); return; }
 
-            fetch('api.php?action=add&type=projects', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, date, desc, members, deadline, links })
-            })
-            .then(res => res.json())
-            .then(data => {
-                projects = data.items;
-                renderProjects();
-                document.getElementById('projectName').value = '';
-                document.getElementById('projectDate').value = '';
-                document.getElementById('projectDesc').value = '';
-                    document.getElementById('projectDeadline').value = '';
-                    document.getElementById('projectLinks').value = '';
-                    document.getElementById('projectMembers').selectedIndex = -1;
-            })
-            .catch(err => console.error('Error adding project:', err));
+            if (editIndex > -1) {
+                // Editing: update the local array then upload the whole set
+                projects[editIndex] = { name, date, desc, members, deadline, links };
+                fetch('api.php?action=upload&type=projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessions: projects })
+                })
+                .then(res => res.json())
+                .then(data => { projects = data.items; renderProjects(); resetForm(); })
+                .catch(err => console.error('Error updating project:', err));
+            } else {
+                // Adding new
+                fetch('api.php?action=add&type=projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, date, desc, members, deadline, links })
+                })
+                .then(res => res.json())
+                .then(data => { projects = data.items; renderProjects(); resetForm(); })
+                .catch(err => console.error('Error adding project:', err));
+            }
         }
 
-        function renderProjects() {
-            const list = document.getElementById('projectsList');
-            list.innerHTML = projects.map((p, i) => `
-                <div class="project-item">
-                    <strong>${p.name}</strong> - ${p.date || 'No date'}
-                    <div>Deadline: ${p.deadline || 'No deadline'}</div>
-                    <div>Members: ${Array.isArray(p.members) ? p.members.join(', ') : (p.members || 'None')}</div>
-                    ${p.links && p.links.length ? `<div style="margin-top:8px;">Links:\n${p.links.map(l => `<div><a href="${l}" target="_blank" rel="noopener noreferrer">${l}</a></div>`).join('')}</div>` : ''}
-                    <p>${p.desc || ''}</p>
-                    <button onclick="deleteProject(${i})">Delete</button>
-                </div>
-            `).join('');
+        // Keep old name working (button calls addProject)
+        function addProject() { saveProject(); }
+
+        function startEdit(index) {
+            editIndex = index;
+            const p = projects[index];
+            document.getElementById('projectName').value     = p.name || '';
+            document.getElementById('projectDate').value     = p.date || '';
+            document.getElementById('projectDesc').value     = p.desc || '';
+            document.getElementById('projectDeadline').value = p.deadline || '';
+            document.getElementById('projectLinks').value    = (p.links || []).join('\n');
+            const sel = document.getElementById('projectMembers');
+            Array.from(sel.options).forEach(opt => {
+                opt.selected = p.members && p.members.includes(opt.value);
+            });
+            document.getElementById('saveBtn').textContent = 'Update Project';
+            document.getElementById('cancelBtn').style.display = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            editIndex = -1;
+            document.getElementById('projectName').value     = '';
+            document.getElementById('projectDate').value     = '';
+            document.getElementById('projectDesc').value     = '';
+            document.getElementById('projectDeadline').value = '';
+            document.getElementById('projectLinks').value    = '';
+            document.getElementById('projectMembers').selectedIndex = -1;
+            document.getElementById('saveBtn').textContent = 'Add Project';
+            document.getElementById('cancelBtn').style.display = 'none';
         }
 
         function deleteProject(index) {
+            if (!confirm('Delete this project?')) return;
             fetch('api.php?action=delete&type=projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ index })
             })
             .then(res => res.json())
-            .then(data => {
-                projects = data.items;
-                renderProjects();
-            })
+            .then(data => { projects = data.items; renderProjects(); })
             .catch(err => console.error('Error deleting project:', err));
         }
 
+        function renderProjects() {
+            const list = document.getElementById('projectsList');
+            if (!projects.length) { list.innerHTML = '<p style="color:var(--muted)">No projects yet.</p>'; return; }
+            list.innerHTML = projects.map((p, i) => `
+                <div class="project-item">
+                    <strong>${p.name}</strong>
+                    <div class="meta">
+                        ${p.date ? '📅 ' + p.date : ''}
+                        ${p.deadline ? ' · Due: ' + p.deadline : ''}
+                    </div>
+                    <div class="meta">Members: ${Array.isArray(p.members) && p.members.length ? p.members.join(', ') : 'None'}</div>
+                    ${p.desc ? `<div style="font-size:0.9em; margin:4px 0;">${p.desc}</div>` : ''}
+                    <div class="btn-row">
+                        <button onclick="startEdit(${i})">Edit</button>
+                        <button onclick="deleteProject(${i})" style="background:#dc3545;">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function downloadJSON() {
-            const dataStr = JSON.stringify(projects, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'projects.json';
-            link.click();
+            const blob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' });
+            const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'projects.json' });
+            a.click();
         }
 
         function uploadJSON() {
-            const fileInput = document.getElementById('fileUpload');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert('Please select a JSON file');
-                return;
-            }
-
+            const file = document.getElementById('fileUpload').files[0];
+            if (!file) { alert('Please select a JSON file'); return; }
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = e => {
                 try {
-                    const uploadedProjects = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(uploadedProjects)) {
-                        alert('Invalid JSON format. File must contain an array of projects.');
-                        return;
-                    }
-
-                    // Validate project objects
-                    const validProjects = uploadedProjects.every(p => p.name);
-                    if (!validProjects) {
-                        alert('Invalid project format. Each project must have a name.');
-                        return;
-                    }
-
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) { alert('File must contain an array of projects.'); return; }
+                    if (!data.every(p => p.name)) { alert('Each project must have a name.'); return; }
                     fetch('api.php?action=upload&type=projects', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessions: uploadedProjects })
+                        body: JSON.stringify({ sessions: data })
                     })
                     .then(res => res.json())
-                    .then(data => {
-                        projects = data.items;
-                        renderProjects();
-                        fileInput.value = '';
-                        alert('Projects uploaded successfully!');
-                    })
-                    .catch(err => {
-                        console.error('Error uploading projects:', err);
-                        alert('Error uploading projects');
-                    });
-                } catch (error) {
-                    alert('Invalid JSON file');
-                }
+                    .then(d => { projects = d.items; renderProjects(); document.getElementById('fileUpload').value = ''; alert('Projects uploaded!'); })
+                    .catch(err => { console.error(err); alert('Upload error'); });
+                } catch { alert('Invalid JSON file'); }
             };
             reader.readAsText(file);
         }
 
         function clearAll() {
-            if (confirm('Clear all projects?')) {
-                fetch('api.php?action=clear&type=projects', { method: 'POST' })
-                    .then(res => res.json())
-                    .then(() => {
-                        projects = [];
-                        renderProjects();
-                    })
-                    .catch(err => console.error('Error clearing projects:', err));
-            }
+            if (!confirm('Clear ALL projects? This cannot be undone.')) return;
+            fetch('api.php?action=clear&type=projects', { method: 'POST' })
+                .then(res => res.json())
+                .then(() => { projects = []; renderProjects(); })
+                .catch(err => console.error('Error clearing projects:', err));
         }
     </script>
 </body>

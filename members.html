@@ -77,16 +77,22 @@
                 return;
             }
 
-            container.innerHTML = members.map(member => `
+            container.innerHTML = members.map(member => {
+                // Logic: Compare member UID with the logged-in currentUID
+                const isMe = currentUID && member.uid === currentUID;
+                // Only create the UID span if it belongs to the logged-in user
+                const uidLabel = isMe ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : '';
+
+                return `
                 <div class="member-card">
-                    <h3>${member.name}${member.uid ? ` <span style="font-size: 0.8em; color: #999;">(${member.uid})</span>` : ''}</h3>
+                    <h3>${member.name}${uidLabel}</h3>
                     ${member.role ? `<div style="font-weight: bold; color: #007bff; margin: 5px 0;">${member.role}</div>` : ''}
                     ${member.email ? `<div style="color: #666; font-size: 0.9em;">📧 ${member.email}</div>` : ''}
-                    ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📱 ${member.phone}</div>` : ''}
-                    ${member.date ? `<div style="color: #666; font-size: 0.9em;">📅 Joined: ${member.date}</div>` : ''}
+                    ${member.phone ? `<div style="color: #666; font-size: 0.9em;">📞 ${member.phone}</div>` : ''}
+                    ${member.date ? `<div style="color: #666; font-size: 0.9em;">🗓️ Joined: ${member.date}</div>` : ''}
                     <div class="member-desc">${member.desc || ''}</div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         window.addEventListener('load', () => {

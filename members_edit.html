@@ -68,171 +68,163 @@
     </div>
 
     <script>
-        const ADMIN_PASSWORD = 'THDCC2026'; // Change this
-        let members = [];
-        let isLoggedIn = false;
+        const ADMIN_PASSWORD = 'THDCC2026';
+let members = [];
+let editIndex = -1; // -1 means adding new, otherwise index of item being edited
 
-        function checkPassword() {
-            const pwd = document.getElementById('passwordInput').value;
-            if (pwd === ADMIN_PASSWORD) {
-                isLoggedIn = true;
-                document.getElementById('loginPanel').classList.add('hidden');
-                document.getElementById('adminPanel').classList.remove('hidden');
-                loadMembers();
-            } else {
-                alert('Invalid password');
-            }
-        }
+function checkPassword() {
+    const pwd = document.getElementById('passwordInput').value;
+    if (pwd === ADMIN_PASSWORD) {
+        document.getElementById('loginPanel').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        loadMembers();
+    } else {
+        alert('Invalid password');
+    }
+}
 
-        function logout() {
-            isLoggedIn = false;
-            document.getElementById('loginPanel').classList.remove('hidden');
-            document.getElementById('adminPanel').classList.add('hidden');
-            document.getElementById('passwordInput').value = '';
-        }
+function loadMembers() {
+    fetch('api.php?action=get&type=members')
+        .then(res => res.json())
+        .then(data => {
+            members = data;
+            renderMembers();
+        });
+}
 
-        function loadMembers() {
-            fetch('api.php?action=get&type=members')
-                .then(res => res.json())
-                .then(data => {
-                    members = data;
-                    renderMembers();
-                })
-                .catch(err => console.error('Error loading members:', err));
-        }
+function addMember() {
+    const name = document.getElementById('memberName').value;
+    const uid = document.getElementById('memberUID').value;
+    const email = document.getElementById('memberEmail').value;
+    const phone = document.getElementById('memberPhone').value;
+    const role = document.getElementById('memberRole').value;
+    const joinDate = document.getElementById('memberJoinDate').value;
+    const desc = document.getElementById('memberDesc').value;
 
-        function addMember() {
-            const name = document.getElementById('memberName').value;
-            const uid = document.getElementById('memberUID').value;
-            const email = document.getElementById('memberEmail').value;
-            const phone = document.getElementById('memberPhone').value;
-            const role = document.getElementById('memberRole').value;
-            const joinDate = document.getElementById('memberJoinDate').value;
-            const desc = document.getElementById('memberDesc').value;
+    if (!name) return alert('Member name is required');
 
-            if (!name) {
-                alert('Member name is required');
-                return;
-            }
+    const memberData = { name, uid, email, phone, role, date: joinDate, desc };
 
-            fetch('api.php?action=add&type=members', {
+    if (editIndex > -1) {
+        // UPDATE MODE
+        members[editIndex] = memberData;
+        fetch('api.php?action=upload&type=members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessions: members }) // api.php uses 'sessions' key for all uploads
+        })
+        .then(res => res.json())
+        .then(data => {
+            members = data.items;
+            finishUI();
+        });
+    } else {
+        // ADD MODE
+        fetch('api.php?action=add&type=members', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(memberData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            members = data.items;
+            finishUI();
+        });
+    }
+}
+
+function startEdit(index) {
+    editIndex = index;
+    const m = members[index];
+    document.getElementById('memberName').value = m.name;
+    document.getElementById('memberUID').value = m.uid || '';
+    document.getElementById('memberEmail').value = m.email || '';
+    document.getElementById('memberPhone').value = m.phone || '';
+    document.getElementById('memberRole').value = m.role || '';
+    document.getElementById('memberJoinDate').value = m.date || '';
+    document.getElementById('memberDesc').value = m.desc || '';
+    
+    document.querySelector('button[onclick="addMember()"]').textContent = "Update Member";
+    window.scrollTo(0, 0);
+}
+
+function finishUI() {
+    renderMembers();
+    resetForm();
+}
+
+function resetForm() {
+    editIndex = -1;
+    document.querySelectorAll('#adminPanel input, #adminPanel textarea').forEach(i => i.value = '');
+    document.querySelector('button[onclick="addMember()"]').textContent = "Add Member";
+}
+
+function renderMembers() {
+    const list = document.getElementById('membersList');
+    list.innerHTML = members.map((m, i) => `
+        <div class="member-item">
+            <strong>${m.name}</strong> ${m.role ? `(${m.role})` : ''}
+            <div style="margin-top:10px;">
+                <button onclick="startEdit(${i})" style="background:#28a745;">Edit</button>
+                <button onclick="deleteMember(${i})" style="background:#dc3545;">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function deleteMember(index) {
+    if (!confirm('Delete this member?')) return;
+    fetch('api.php?action=delete&type=members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index })
+    })
+    .then(res => res.json())
+    .then(data => { members = data.items; renderMembers(); })
+    .catch(err => console.error('Error deleting member:', err));
+}
+
+function logout() {
+    document.getElementById('loginPanel').classList.remove('hidden');
+    document.getElementById('adminPanel').classList.add('hidden');
+    document.getElementById('passwordInput').value = '';
+}
+
+function downloadJSON() {
+    const blob = new Blob([JSON.stringify(members, null, 2)], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'members.json' });
+    a.click();
+}
+
+function uploadJSON() {
+    const file = document.getElementById('fileUpload').files[0];
+    if (!file) { alert('Please select a JSON file'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) { alert('File must contain an array of members.'); return; }
+            if (!data.every(m => m.name)) { alert('Each member must have a name.'); return; }
+            fetch('api.php?action=upload&type=members', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, uid, email, phone, role, date: joinDate, desc })
+                body: JSON.stringify({ sessions: data })
             })
             .then(res => res.json())
-            .then(data => {
-                members = data.items;
-                renderMembers();
-                document.getElementById('memberName').value = '';
-                document.getElementById('memberUID').value = '';
-                document.getElementById('memberEmail').value = '';
-                document.getElementById('memberPhone').value = '';
-                document.getElementById('memberRole').value = '';
-                document.getElementById('memberJoinDate').value = '';
-                document.getElementById('memberDesc').value = '';
-            })
-            .catch(err => console.error('Error adding member:', err));
-        }
+            .then(d => { members = d.items; renderMembers(); document.getElementById('fileUpload').value = ''; alert('Members uploaded!'); })
+            .catch(err => { console.error(err); alert('Upload error'); });
+        } catch { alert('Invalid JSON file'); }
+    };
+    reader.readAsText(file);
+}
 
-        function renderMembers() {
-            const list = document.getElementById('membersList');
-            list.innerHTML = members.map((m, i) => `
-                <div class="member-item">
-                    <strong>${m.name}</strong> ${m.uid ? `(${m.uid})` : ''} ${m.role ? `- ${m.role}` : ''}
-                    ${m.email ? `<p>📧 ${m.email}</p>` : ''}
-                    ${m.phone ? `<p>📱 ${m.phone}</p>` : ''}
-                    ${m.date ? `<p>📅 Joined: ${m.date}</p>` : ''}
-                    ${m.desc ? `<p>${m.desc}</p>` : ''}
-                    <button onclick="deleteMember(${i})">Delete</button>
-                </div>
-            `).join('');
-        }
-
-        function deleteMember(index) {
-            fetch('api.php?action=delete&type=members', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ index })
-            })
-            .then(res => res.json())
-            .then(data => {
-                members = data.items;
-                renderMembers();
-            })
-            .catch(err => console.error('Error deleting member:', err));
-        }
-
-        function downloadJSON() {
-            const dataStr = JSON.stringify(members, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'members.json';
-            link.click();
-        }
-
-        function uploadJSON() {
-            const fileInput = document.getElementById('fileUpload');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert('Please select a JSON file');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const uploadedMembers = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(uploadedMembers)) {
-                        alert('Invalid JSON format. File must contain an array of members.');
-                        return;
-                    }
-
-                    // Validate member objects
-                    const validMembers = uploadedMembers.every(m => m.name);
-                    if (!validMembers) {
-                        alert('Invalid member format. Each member must have a name.');
-                        return;
-                    }
-
-                    fetch('api.php?action=upload&type=members', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessions: uploadedMembers })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        members = data.items;
-                        renderMembers();
-                        fileInput.value = '';
-                        alert('Members uploaded successfully!');
-                    })
-                    .catch(err => {
-                        console.error('Error uploading members:', err);
-                        alert('Error uploading members');
-                    });
-                } catch (error) {
-                    alert('Invalid JSON file');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function clearAll() {
-            if (confirm('Clear all members?')) {
-                fetch('api.php?action=clear&type=members', { method: 'POST' })
-                    .then(res => res.json())
-                    .then(() => {
-                        members = [];
-                        renderMembers();
-                    })
-                    .catch(err => console.error('Error clearing members:', err));
-            }
-        }
+function clearAll() {
+    if (!confirm('Clear ALL members? This cannot be undone.')) return;
+    fetch('api.php?action=clear&type=members', { method: 'POST' })
+        .then(res => res.json())
+        .then(() => { members = []; renderMembers(); })
+        .catch(err => console.error('Error clearing members:', err));
+}
     </script>
 </body>
 </html>
