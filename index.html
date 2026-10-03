@@ -76,7 +76,6 @@
         <div id="myProfile" class="profile-section hidden">
             <h2>Your Profile</h2>
             <p><strong>Name:</strong>   <span id="profileName"></span></p>
-            <p><strong>UID:</strong>    <span id="profileUID"></span></p>
             <p><strong>Email:</strong>  <span id="profileEmail"></span></p>
             <p><strong>Phone:</strong>  <span id="profilePhone"></span></p>
             <p><strong>Role:</strong>   <span id="profileRole"></span></p>
@@ -92,31 +91,31 @@
                 <!-- Sessions card -->
                 <div class="dash-card">
                     <div class="dash-card-header">
-                        <a href="sessions.html" class="title-link">📅 Sessions</a>
+                        <a href="#" onclick="nav('sessions.html')" class="title-link">📅 Sessions</a>
                         <a href="sessions_edit.html" class="edit-btn">Edit</a>
                     </div>
                     <div id="nearestSessionContainer">Loading…</div>
-                    <a href="sessions.html" class="view-all-link">View all sessions →</a>
+                    <a href="#" onclick="nav('sessions.html')" class="view-all-link">View all sessions →</a>
                 </div>
 
                 <!-- Projects card -->
                 <div class="dash-card">
                     <div class="dash-card-header">
-                        <a href="projects.html" class="title-link">🗂 My Projects</a>
+                        <a href="#" onclick="nav('projects.html')" class="title-link">🗂 My Projects</a>
                         <a href="projects_edit.html" class="edit-btn">Edit</a>
                     </div>
                     <div id="myProjectsContainer">Loading…</div>
-                    <a href="projects.html" class="view-all-link">View all projects →</a>
+                    <a href="#" onclick="nav('projects.html')" class="view-all-link">View all projects →</a>
                 </div>
 
                 <!-- Members card -->
                 <div class="dash-card">
                     <div class="dash-card-header">
-                        <a href="members.html" class="title-link">👥 Members</a>
+                        <a href="#" onclick="nav('members.html')" class="title-link">👥 Members</a>
                         <a href="members_edit.html" class="edit-btn">Edit</a>
                     </div>
                     <div id="allMembersContainer">Loading…</div>
-                    <a href="members.html" class="view-all-link">View all members →</a>
+                    <a href="#" onclick="nav('members.html')" class="view-all-link">View all members →</a>
                 </div>
 
             </div>
@@ -127,6 +126,16 @@
     <script>
         const DASH_LIMIT = 3; // max items shown per card
         let currentUID = null;
+
+        /* ── Navigation helper — carries UID across pages ──────── */
+        function nav(page) {
+            if (currentUID) {
+                window.location.href = page + '?uid=' + encodeURIComponent(currentUID);
+            } else {
+                window.location.href = page;
+            }
+            return false;
+        }
 
         /* ── Auth ──────────────────────────────────────────────── */
         function loginMember() {
@@ -167,7 +176,6 @@
             // Populate profile
             document.getElementById('myProfile').classList.remove('hidden');
             document.getElementById('profileName').textContent  = member.name;
-            document.getElementById('profileUID').textContent   = member.uid;
             document.getElementById('profileEmail').textContent = member.email || 'N/A';
             document.getElementById('profilePhone').textContent = member.phone || 'N/A';
             document.getElementById('profileRole').textContent  = member.role  || 'N/A';
@@ -256,7 +264,7 @@
     el.innerHTML = members.slice(0, DASH_LIMIT).map(m => {
         const isMe = m.uid && m.uid === currentUID;
         // Logic: Only show the UID if isMe is true
-        const uidDisplay = isMe ? ` <span style="color:#999;font-size:0.8em;">(${m.uid})</span>` : '';
+        const uidDisplay = isMe ? ` <span style="color:#999;font-size:0.8em;"></span>` : '';
         const meTag = isMe ? ' <span style="color:#28a745;font-size:0.8em;">(you)</span>' : '';
 
         return `
@@ -267,8 +275,16 @@
         </div>`;
     }).join('');
 }
-        /* ── Auto-login from session ───────────────────────────── */
+        /* ── Auto-login from session or URL param ──────────────── */
         window.addEventListener('load', () => {
+            // Accept UID from URL param (passed by nav() from subpages)
+            const urlUID = new URLSearchParams(window.location.search).get('uid');
+            if (urlUID) {
+                sessionStorage.setItem('memberUID', urlUID);
+                // Clean the URL without reloading
+                history.replaceState(null, '', window.location.pathname);
+            }
+
             const savedUID = sessionStorage.getItem('memberUID');
             if (!savedUID) return;
 
