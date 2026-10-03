@@ -45,45 +45,52 @@ function getSessions() {
 }
 
 function addSession() {
-    global $dataFile;
+    global $dataFile, $type;
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     if (!isset($input['name'])) {
         http_response_code(400);
-        echo json_encode(['error' => ucfirst(rtrim($GLOBALS['dataFile'], '.json')) . ' name required']);
+        echo json_encode(['error' => ucfirst($type) . ' name required']);
         return;
     }
 
-    $items = json_decode(file_get_contents($GLOBALS['dataFile']), true);
+    // Members must have a UID so they can log in
+    if ($type === 'members' && empty(trim($input['uid'] ?? ''))) {
+        http_response_code(400);
+        echo json_encode(['error' => 'UID is required for members']);
+        return;
+    }
+
+    $items = json_decode(file_get_contents($dataFile), true);
     $items[] = [
-        'name' => $input['name'],
-        'uid'  => $input['uid'] ?? '',
-        'email' => $input['email'] ?? '',
-        'phone' => $input['phone'] ?? '',
-        'role' => $input['role'] ?? '',
-        'date' => $input['date'] ?? '',
+        'name'     => $input['name'],
+        'uid'      => $input['uid'] ?? '',
+        'email'    => $input['email'] ?? '',
+        'phone'    => $input['phone'] ?? '',
+        'role'     => $input['role'] ?? '',
+        'date'     => $input['date'] ?? '',
         'deadline' => $input['deadline'] ?? '',
-        'members' => $input['members'] ?? [],
-        'desc' => $input['desc'] ?? ''
+        'members'  => $input['members'] ?? [],
+        'desc'     => $input['desc'] ?? ''
     ];
-    
-    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+
+    file_put_contents($dataFile, json_encode($items, JSON_PRETTY_PRINT));
     echo json_encode(['success' => true, 'items' => $items]);
 }
 
 function deleteSession() {
     global $dataFile;
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     if (!isset($input['index'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Index required']);
         return;
     }
 
-    $items = json_decode(file_get_contents($GLOBALS['dataFile']), true);
+    $items = json_decode(file_get_contents($dataFile), true);
     array_splice($items, $input['index'], 1);
-    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+    file_put_contents($dataFile, json_encode($items, JSON_PRETTY_PRINT));
     echo json_encode(['success' => true, 'items' => $items]);
 }
 
@@ -93,15 +100,10 @@ function clearSessions() {
     echo json_encode(['success' => true]);
 }
 
-// Alias for consistency with new type parameter system
-function clearItems() {
-    clearSessions();
-}
-
 function uploadSessions() {
     global $dataFile;
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     if (!isset($input['sessions']) || !is_array($input['sessions'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Items array required']);
@@ -118,7 +120,6 @@ function uploadSessions() {
     }
 
     $items = $input['sessions'];
-    file_put_contents($GLOBALS['dataFile'], json_encode($items, JSON_PRETTY_PRINT));
+    file_put_contents($dataFile, json_encode($items, JSON_PRETTY_PRINT));
     echo json_encode(['success' => true, 'items' => $items]);
 }
-?>
